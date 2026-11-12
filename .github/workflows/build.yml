@@ -19,25 +19,26 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   build:
-    name: Build
+    name: Build (release)
     runs-on: macos-15
-    strategy:
-      matrix:
-        include:
-          - name: debug
-            flags: ""
-          - name: release
-            flags: "RELEASE=1"
-          - name: mac
-            flags: "RELEASE=1 MAC=1"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Get tags
-        run: git fetch --prune --unshallow --tags
+        run: git fetch --prune --tags --force
+
+      - name: Resolve version
+        id: version
+        run: echo "version=$(git describe --tags --always | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       - name: Select Xcode version
         run: |
@@ -55,17 +56,21 @@ jobs:
           cache: true
           cache-path: ~/__cache
 
-      - name: Build ${{ matrix.name }}
-        run: make ${{ matrix.flags }}
+      - name: Build release
+        run: make RELEASE=1
 
       - name: Upload packages to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }} package
+          name: release package
           path: ${{ github.workspace }}/packages/*
+
       - name: Upload packages to release
-        if: github.event_name == 'release' && matrix.name == 'release'
-        uses: svenstaro/upload-release-action@2.7.0
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
         with:
-          file: ${{ github.workspace }}/packages/*.deb
-          file_glob: true
+          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || steps.version.outputs.version }}
+          name: ellekit ${{ steps.version.outputs.version }}
+          files: |
+            ${{ github.workspace }}/packages/*.deb
+          fail_on_unmatched_files: true
