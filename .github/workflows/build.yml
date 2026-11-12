@@ -39,9 +39,14 @@ jobs:
       - name: Get tags
         run: git fetch --prune --unshallow --tags
 
-      - name: Select Xcode version (15.1)
+      - name: Select Xcode version
         run: |
-          sudo xcode-select --switch /Applications/Xcode_15.1.app
+          ls -d /Applications/Xcode*.app || true
+          if [ -d /Applications/Xcode_15.1.app ]; then
+            sudo xcode-select --switch /Applications/Xcode_15.1.app
+          fi
+          echo "Active developer dir: $(xcode-select -p)"
+          xcodebuild -version
 
       - name: Bootstrap Procursus
         uses: dhinakg/procursus-action@main
