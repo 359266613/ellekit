@@ -22,7 +22,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: macos-13
+    runs-on: macos-15
     strategy:
       matrix:
         include:
@@ -39,7 +39,7 @@ jobs:
       - name: Get tags
         run: git fetch --prune --unshallow --tags
 
-      - name: Select Xcode version (15.1)
+      - name: Select Xcode version (16.2)
         run: |
           sudo xcode-select --switch /Applications/Xcode_15.1.app
 
